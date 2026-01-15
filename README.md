@@ -1,15 +1,27 @@
 # Learn Rust
 
-- [Theory](./learn/0.theory/cargo-book.md)
+- Theory
+  - Borrow vs Ownership
+    - [Concepts](./learn/0.theory/borrow-ownership/README.md)
+    - [Visualizer](./learn/0.theory/borrow-ownership/rust-ownership-viz.html)
 - Prepare workspace:
-  - [Setup CLI](./learn/1.prepare_workspace/1.setup-cli.md)
-  - [Set store artifacts directory](./learn/1.prepare_workspace/2.set-store-artifacts-directory.md)
-  - [Cargo caching handler](./learn/1.prepare_workspace/3.cargo-caching-handler.md)
-  - [Linter](./learn/1.prepare_workspace/4.linter.md)
-  - [Playground](./learn/1.prepare_workspace/5.Playground.md)
-  - [Create project](./learn/1.prepare_workspace/6.create-project.md)
-  - [Directory structure, coming soon...](./learn/1.prepare_workspace/7.directory-structure.md)
-  - [Feature flag/toggle, coming soon...](./learn/1.prepare_workspace/8.feature-flag.md)
-  - [Testing, coming soon...](./learn/1.prepare_workspace/9.testing.md)
+  - [Setup CLI](./learn/1.prepare-workspace/1.setup-cli.md)
+  - [Set store artifacts directory](./learn/1.prepare-workspace/2.set-store-artifacts-directory.md)
+  - [Cargo caching handler](./learn/1.prepare-workspace/3.cargo-caching-handler.md)
+  - [Linter](./learn/1.prepare-workspace/4.linter.md)
+  - [Playground](./learn/1.prepare-workspace/5.Playground.md)
+  - [Create project](./learn/1.prepare-workspace/6.create-project.md)
+  - [Directory structure, coming soon...](./learn/1.prepare-workspace/7.directory-structure.md)
+  - [Feature flag/toggle, coming soon...](./learn/1.prepare-workspace/8.feature-flag.md)
+  - [Testing, coming soon...](./learn/1.prepare-workspace/9.testing.md)
 - Coding:
   - [Simple microservice](./learn/2.coding/ex1-simple-microservice/README.md)
+
+## Case Study
+
+- Thread
+  - [tokio](./case-study/thread/tokio.md)
+- [block-of-code and drop](./case-study/block-of-code.md)
+
+## Reference
+- [Cargo book](./learn/references/cargo-book.md)
