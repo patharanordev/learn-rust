@@ -9,7 +9,7 @@
   - [Set store artifacts directory](./learn/1.prepare-workspace/2.set-store-artifacts-directory.md)
   - [Cargo caching handler](./learn/1.prepare-workspace/3.cargo-caching-handler.md)
   - [Linter](./learn/1.prepare-workspace/4.linter.md)
-  - [Playground](./learn/1.prepare-workspace/5.Playground.md)
+  - [Playground](./learn/1.prepare-workspace/5.playground.md)
   - [Create project](./learn/1.prepare-workspace/6.create-project.md)
   - [Directory structure, coming soon...](./learn/1.prepare-workspace/7.directory-structure.md)
   - [Feature flag/toggle, coming soon...](./learn/1.prepare-workspace/8.feature-flag.md)

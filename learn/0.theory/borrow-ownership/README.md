@@ -2,7 +2,7 @@
 
 Ownership is a core concept in Rust that helps manage memory safety without a garbage collector. It's based on the idea that each value has a single owner, and when that owner goes out of scope, the value is automatically cleaned up.
 
-Before start, please read and understand 2-concepts below:
+Before starting, please read and understand 2-concepts below:
 
 1. [Stack and Heap](concept1_stack-vs-heap.md)
 2. [Move and Clone](concept2_move-vs-clone.md)
@@ -162,9 +162,13 @@ You cannot have a mutable reference (`&mut`) if *any* other reference (immutable
 
 ```rs
 let mut s = String::from("world");
-let r1 = &s;      // ✅ OK: immutable borrow
-// let r2 = &mut s; // ❌ ERROR: cannot borrow `s` as mutable because it is also borrowed as immutable
-drop(r1);         // r1 is gone
+
+{
+    let r1 = &s;      // ✅ OK: immutable borrow
+    // let r2 = &mut s; // ❌ ERROR: cannot borrow `s` as mutable because it is also borrowed as immutable
+    println!("{}", r1);
+} // r1 goes out of scope here
+
 let r2 = &mut s;  // ✅ OK: now we can have a mutable borrow
 ```
 

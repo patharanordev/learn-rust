@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,7 +49,8 @@
             margin-bottom: 20px;
         }
 
-        button, select {
+        button,
+        select {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-color);
@@ -110,7 +112,7 @@
             color: var(--secondary-color);
             white-space: pre-wrap;
         }
-        
+
         .code-line.active {
             background-color: var(--highlight-line);
             color: var(--accent-color);
@@ -147,8 +149,15 @@
         }
 
         @keyframes highlight {
-            0% { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
-            100% { border-color: var(--border-color); box-shadow: none; }
+            0% {
+                border-color: var(--accent-color);
+                box-shadow: 0 0 10px var(--accent-color);
+            }
+
+            100% {
+                border-color: var(--border-color);
+                box-shadow: none;
+            }
         }
 
         .stack-frame {
@@ -161,24 +170,39 @@
             display: flex;
             justify-content: space-between;
             padding: 4px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
-        
-        .var-name { color: var(--accent-color); font-weight: bold; }
-        .var-value { font-family: monospace; }
-        .var-addr { font-size: 0.8em; color: var(--secondary-color); margin-right: 10px; width: 80px; display: inline-block; }
+
+        .var-name {
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .var-value {
+            font-family: monospace;
+        }
+
+        .var-addr {
+            font-size: 0.8em;
+            color: var(--secondary-color);
+            margin-right: 10px;
+            width: 80px;
+            display: inline-block;
+        }
 
         .heap-object {
             display: flex;
             flex-direction: column;
         }
+
         .heap-header {
             font-size: 0.85em;
             color: var(--secondary-color);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             margin-bottom: 5px;
             padding-bottom: 2px;
         }
+
         .heap-data {
             font-family: monospace;
             letter-spacing: 2px;
@@ -223,11 +247,21 @@
             margin-top: 10px;
             justify-content: center;
         }
-        .legend-item { display: flex; align-items: center; gap: 5px; }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
 
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
     </style>
 </head>
+
 <body>
 
     <h1>Rust Ownership Visualizer</h1>
@@ -249,8 +283,12 @@
             <div class="panel-header">Code</div>
             <div id="code-display" style="font-family: monospace; line-height: 1.6;"></div>
             <div class="legend" style="margin-top: auto;">
-                <div class="legend-item"><div class="dot" style="background: var(--accent-color)"></div>Active Line</div>
-                <div class="legend-item"><div class="dot" style="background: var(--invalid-color)"></div>Moved/Invalid</div>
+                <div class="legend-item">
+                    <div class="dot" style="background: var(--accent-color)"></div>Active Line
+                </div>
+                <div class="legend-item">
+                    <div class="dot" style="background: var(--invalid-color)"></div>Moved/Invalid
+                </div>
             </div>
         </div>
 
@@ -288,59 +326,61 @@
             basic: {
                 code: [
                     'fn main() {',
-                    '    let s1 = String::from("hello"); // Ownership',
-                    '    let r = &s1;                    // Borrow',
-                    '    drop(r);                        // End borrow',
-                    '    let s2 = s1;                    // Move (s1 invalid)',
-                    '    let s3 = s2.clone();            // Clone (Deep copy)',
+                    '    let s1 = String::from("hello");',
+                    '    {',
+                    '        let r = &s1; // Borrow',
+                    '    } // r ends',
+                    '    let s2 = s1;     // Move',
+                    '    let s3 = s2.clone();',
                     '}'
                 ],
                 steps: [
                     { line: 0, stack: [], heap: [], desc: "Program start" },
-                    { 
-                        line: 1, 
-                        stack: [{ name: 's1', addr: '0x7FFF_1000', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#38bdf8' }], 
+                    {
+                        line: 1,
+                        stack: [{ name: 's1', addr: '0x7FFF_1000', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#38bdf8' }],
                         heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's1' }],
                         desc: "s1 owns 'hello' on heap"
                     },
-                    {
-                        line: 2,
-                        stack: [
-                            { name: 's1', addr: '0x7FFF_1000', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#38bdf8' },
-                            { name: 'r', addr: '0x7FFF_1020', value: '0x7FFF_1000', type: '&String', ref: 's1' } 
-                        ],
-                        heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's1' }],
-                        desc: "r borrows s1 (points to stack)"
-                    },
+                    { line: 2, stack: [{ name: 's1', addr: '0x7FFF_1000', value: '{...}', type: 'String', color: '#38bdf8' }], heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's1' }], desc: "Enter scope" },
                     {
                         line: 3,
                         stack: [
-                            { name: 's1', addr: '0x7FFF_1000', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#38bdf8' }
-                        ], // r dropped
+                            { name: 's1', addr: '0x7FFF_1000', value: '{...}', type: 'String', color: '#38bdf8' },
+                            { name: 'r', addr: '0x7FFF_1020', value: '0x7FFF_1000', type: '&String', ref: 's1' }
+                        ],
                         heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's1' }],
-                        desc: "r dropped"
+                        desc: "r borrows s1"
                     },
                     {
                         line: 4,
                         stack: [
-                            { name: 's1', addr: '0x7FFF_1000', value: '<moved>', type: 'String', invalid: true },
-                            { name: 's2', addr: '0x7FFF_1040', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#a78bfa' }
+                            { name: 's1', addr: '0x7FFF_1000', value: '{ ptr: 0x6000_0100... }', type: 'String', color: '#38bdf8' }
                         ],
-                        heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's2' }],
-                        desc: "s1 moved to s2. s1 invalid."
+                        heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's1' }],
+                        desc: "r goes out of scope"
                     },
                     {
                         line: 5,
                         stack: [
                             { name: 's1', addr: '0x7FFF_1000', value: '<moved>', type: 'String', invalid: true },
-                            { name: 's2', addr: '0x7FFF_1040', value: '{ ptr: 0x6000_0100 ... }', type: 'String', color: '#a78bfa' },
-                            { name: 's3', addr: '0x7FFF_1060', value: '{ ptr: 0x6000_0200 ... }', type: 'String', color: '#34d399' }
+                            { name: 's2', addr: '0x7FFF_1040', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#a78bfa' }
+                        ],
+                        heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's2' }],
+                        desc: "s1 moved to s2"
+                    },
+                    {
+                        line: 6,
+                        stack: [
+                            { name: 's1', addr: '0x7FFF_1000', value: '<moved>', type: 'String', invalid: true },
+                            { name: 's2', addr: '0x7FFF_1040', value: '{ ptr: 0x6000_0100... }', type: 'String', color: '#a78bfa' },
+                            { name: 's3', addr: '0x7FFF_1060', value: '{ ptr: 0x6000_0200... }', type: 'String', color: '#34d399' }
                         ],
                         heap: [
                             { addr: '0x6000_0100', content: '"hello"', owner: 's2' },
                             { addr: '0x6000_0200', content: '"hello"', owner: 's3' }
                         ],
-                        desc: "s2 cloned to s3. New heap alloc."
+                        desc: "s2 cloned to s3"
                     }
                 ]
             },
@@ -348,52 +388,57 @@
                 code: [
                     'fn main() {',
                     '    let mut s = String::from("world");',
-                    '    let r1 = &s;      // Immutable',
-                    '    let r2 = &mut s;  // ERROR will show here',
-                    '    drop(r1);',
-                    '    let r2 = &mut s;  // OK',
+                    '    {',
+                    '        let r1 = &s; // Immutable',
+                    '        // let r2 = &mut s; // ERROR',
+                    '    } // r1 ends',
+                    '    let r2 = &mut s; // OK',
                     '}'
                 ],
                 steps: [
-                     { line: 0, stack: [], heap: [], desc: "Start" },
-                     { 
-                        line: 1, 
+                    { line: 0, stack: [], heap: [], desc: "Start" },
+                    {
+                        line: 1,
                         stack: [{ name: 's', addr: '0x7FFF_2000', value: '{ ptr: 0x6000_0500... }', type: 'String', color: '#fbbf24' }],
                         heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }]
-                     },
-                     {
-                        line: 2,
+                    },
+                    { line: 2, stack: [{ name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' }], heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }], desc: "Enter scope" },
+                    {
+                        line: 3,
                         stack: [
                             { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' },
                             { name: 'r1', addr: '0x7FFF_2020', value: '0x7FFF_2000', type: '&String', ref: 's' }
                         ],
-                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }]
-                     },
-                      {
-                        line: 3,
+                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }],
+                        desc: "r1 borrows s (immutable)"
+                    },
+                    {
+                        line: 4,
                         stack: [
                             { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' },
                             { name: 'r1', addr: '0x7FFF_2020', value: '0x7FFF_2000', type: '&String', ref: 's' },
                             { name: 'r2', addr: '0x7FFF_2040', value: 'BLOCKED', type: '&mut String', invalid: true }
                         ],
                         heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }],
-                        desc: "Cannot borrow as mutable because it is also borrowed as immutable"
-                     },
-                      {
-                        line: 4,
-                        stack: [
-                             { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' }
-                        ],
-                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }]
-                     },
-                     {
+                        desc: "Cannot borrow mutably here"
+                    },
+                    {
                         line: 5,
                         stack: [
-                             { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' },
-                             { name: 'r2', addr: '0x7FFF_2060', value: '0x7FFF_2000', type: '&mut String', ref: 's' }
+                            { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' }
                         ],
-                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }]
-                     }
+                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }],
+                        desc: "r1 goes out of scope"
+                    },
+                    {
+                        line: 6,
+                        stack: [
+                            { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' },
+                            { name: 'r2', addr: '0x7FFF_2060', value: '0x7FFF_2000', type: '&mut String', ref: 's' }
+                        ],
+                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }],
+                        desc: "Now mutable borrow is OK"
+                    }
                 ]
             },
             copy: {
@@ -405,13 +450,13 @@
                 ],
                 steps: [
                     { line: 0, stack: [], heap: [] },
-                    { 
-                        line: 1, 
+                    {
+                        line: 1,
                         stack: [{ name: 'x', addr: '0x7FFF_3000', value: '5', type: 'i32', color: '#38bdf8' }],
                         heap: []
                     },
-                    { 
-                        line: 2, 
+                    {
+                        line: 2,
                         stack: [
                             { name: 'x', addr: '0x7FFF_3000', value: '5', type: 'i32', color: '#38bdf8' },
                             { name: 'y', addr: '0x7FFF_3008', value: '5', type: 'i32', color: '#38bdf8' }
@@ -451,7 +496,7 @@
 
         function renderState() {
             const data = scenarios[currentScenario].steps[stepIndex];
-            
+
             // Highlight Code
             document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active'));
             const activeLine = document.getElementById(`line-${data.line}`);
@@ -500,7 +545,7 @@
 
         function drawPointers(data) {
             // Clear existing arrows
-            while(ui.svg.childNodes.length > 2) { // Keep defs
+            while (ui.svg.childNodes.length > 2) { // Keep defs
                 ui.svg.removeChild(ui.svg.lastChild);
             }
 
@@ -544,7 +589,7 @@
                 const y2 = toRect.top + toRect.height / 2 - containerRect.top;
 
                 const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                
+
                 // Curve for aesthetics
                 const dx = Math.abs(x2 - x1) / 2;
                 const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
@@ -596,4 +641,5 @@
 
     </script>
 </body>
+
 </html>
