@@ -3,7 +3,7 @@
 - Theory
   - Borrow vs Ownership
     - [Concepts](./learn/0.theory/borrow-ownership/README.md)
-    - [Visualizer](./learn/0.theory/borrow-ownership/rust-ownership-viz.html)
+    - [Visualizer](https://patharanordev.github.io/learn-rust/)
 - Prepare workspace:
   - [Setup CLI](./learn/1.prepare-workspace/1.setup-cli.md)
   - [Set store artifacts directory](./learn/1.prepare-workspace/2.set-store-artifacts-directory.md)

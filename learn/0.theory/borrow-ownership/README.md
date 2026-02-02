@@ -202,7 +202,7 @@ STACK
 ## Visualizing the "Stack Tower" vs "Heap"
 
 > ---
-> Please see [rust-ownership-viz.html](rust-ownership-viz.html) for an interactive visualization of the Stack Tower and Heap.
+> Please see [viz](https://patharanordev.github.io/learn-rust/) for an interactive visualization of the Stack Tower and Heap.
 >
 > ---
 
