@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rust Ownership Visualizer</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #e2e8f0;
+            --accent-color: #38bdf8;
+            --secondary-color: #94a3b8;
+            --stack-bg: #1e293b;
+            --heap-bg: #1e293b;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(148, 163, 184, 0.1);
+            --highlight-code: #1e293b;
+            --highlight-line: #334155;
+            --pointer-color: #f472b6;
+            --invalid-color: #64748b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 300;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        button, select {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .main-container {
+            display: flex;
+            flex: 1;
+            gap: 20px;
+            height: 100%;
+        }
+
+        .panel {
+            flex: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .panel-header {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            color: var(--secondary-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Code View */
+        .code-line {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            color: var(--secondary-color);
+            white-space: pre-wrap;
+        }
+        
+        .code-line.active {
+            background-color: var(--highlight-line);
+            color: var(--accent-color);
+            font-weight: bold;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        /* Stack & Heap Layout */
+        .memory-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .memory-block {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            transition: all 0.5s ease;
+            position: relative;
+        }
+
+        .memory-block.invalid {
+            opacity: 0.5;
+            text-decoration: line-through;
+            border-color: var(--invalid-color);
+        }
+
+        .memory-block.new {
+            animation: highlight 1s ease;
+        }
+
+        @keyframes highlight {
+            0% { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
+            100% { border-color: var(--border-color); box-shadow: none; }
+        }
+
+        .stack-frame {
+            border-left: 2px solid var(--secondary-color);
+            padding-left: 10px;
+            margin-bottom: 15px;
+        }
+
+        .var-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .var-name { color: var(--accent-color); font-weight: bold; }
+        .var-value { font-family: monospace; }
+        .var-addr { font-size: 0.8em; color: var(--secondary-color); margin-right: 10px; width: 80px; display: inline-block; }
+
+        .heap-object {
+            display: flex;
+            flex-direction: column;
+        }
+        .heap-header {
+            font-size: 0.85em;
+            color: var(--secondary-color);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 5px;
+            padding-bottom: 2px;
+        }
+        .heap-data {
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+
+        /* SVG Overlay for pointers */
+        #pointer-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        path.pointer-arrow {
+            fill: none;
+            stroke: var(--pointer-color);
+            stroke-width: 2;
+            marker-end: url(#arrowhead);
+            transition: d 0.5s ease;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: #334155;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 15px;
+            font-size: 0.8rem;
+            color: var(--secondary-color);
+            margin-top: 10px;
+            justify-content: center;
+        }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    </style>
+</head>
+<body>
+
+    <h1>Rust Ownership Visualizer</h1>
+
+    <div class="controls">
+        <select id="scenario-selector">
+            <option value="basic">Scenario 1: Ownership, Move & Clone</option>
+            <option value="borrow">Scenario 2: Mutable Borrowing</option>
+            <option value="copy">Scenario 3: Copy Types</option>
+        </select>
+        <button id="prev-btn" disabled>T Previous</button>
+        <button id="next-btn">Next T</button>
+        <button id="reset-btn">Reset</button>
+    </div>
+
+    <div class="main-container">
+        <!-- Code Panel -->
+        <div class="panel" style="flex: 0.8;">
+            <div class="panel-header">Code</div>
+            <div id="code-display" style="font-family: monospace; line-height: 1.6;"></div>
+            <div class="legend" style="margin-top: auto;">
+                <div class="legend-item"><div class="dot" style="background: var(--accent-color)"></div>Active Line</div>
+                <div class="legend-item"><div class="dot" style="background: var(--invalid-color)"></div>Moved/Invalid</div>
+            </div>
+        </div>
+
+        <!-- Stack Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                Stack (LIFO)
+                <span style="font-size: 0.8em; font-weight: normal;">Start: 0x7FFF_...</span>
+            </div>
+            <div id="stack-display" class="memory-area"></div>
+        </div>
+
+        <!-- Heap Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                Heap
+                <span style="font-size: 0.8em; font-weight: normal;">Start: 0x6000_...</span>
+            </div>
+            <div id="heap-display" class="memory-area"></div>
+        </div>
+    </div>
+
+    <!-- SVG Layer for pointers -->
+    <svg id="pointer-layer">
+        <defs>
+            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#f472b6" />
+            </marker>
+        </defs>
+    </svg>
+
+    <script>
+        // --- Data & State ---
+        const scenarios = {
+            basic: {
+                code: [
+                    'fn main() {',
+                    '    let s1 = String::from("hello"); // Ownership',
+                    '    let r = &s1;                    // Borrow',
+                    '    drop(r);                        // End borrow',
+                    '    let s2 = s1;                    // Move (s1 invalid)',
+                    '    let s3 = s2.clone();            // Clone (Deep copy)',
+                    '}'
+                ],
+                steps: [
+                    { line: 0, stack: [], heap: [], desc: "Program start" },
+                    { 
+                        line: 1, 
+                        stack: [{ name: 's1', addr: '0x7FFF_1000', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#38bdf8' }], 
+                        heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's1' }],
+                        desc: "s1 owns 'hello' on heap"
+                    },
+                    {
+                        line: 2,
+                        stack: [
+                            { name: 's1', addr: '0x7FFF_1000', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#38bdf8' },
+                            { name: 'r', addr: '0x7FFF_1020', value: '0x7FFF_1000', type: '&String', ref: 's1' } 
+                        ],
+                        heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's1' }],
+                        desc: "r borrows s1 (points to stack)"
+                    },
+                    {
+                        line: 3,
+                        stack: [
+                            { name: 's1', addr: '0x7FFF_1000', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#38bdf8' }
+                        ], // r dropped
+                        heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's1' }],
+                        desc: "r dropped"
+                    },
+                    {
+                        line: 4,
+                        stack: [
+                            { name: 's1', addr: '0x7FFF_1000', value: '<moved>', type: 'String', invalid: true },
+                            { name: 's2', addr: '0x7FFF_1040', value: '{ ptr: 0x6000_0100, len: 5, cap: 5 }', type: 'String', color: '#a78bfa' }
+                        ],
+                        heap: [{ addr: '0x6000_0100', content: '"hello"', owner: 's2' }],
+                        desc: "s1 moved to s2. s1 invalid."
+                    },
+                    {
+                        line: 5,
+                        stack: [
+                            { name: 's1', addr: '0x7FFF_1000', value: '<moved>', type: 'String', invalid: true },
+                            { name: 's2', addr: '0x7FFF_1040', value: '{ ptr: 0x6000_0100 ... }', type: 'String', color: '#a78bfa' },
+                            { name: 's3', addr: '0x7FFF_1060', value: '{ ptr: 0x6000_0200 ... }', type: 'String', color: '#34d399' }
+                        ],
+                        heap: [
+                            { addr: '0x6000_0100', content: '"hello"', owner: 's2' },
+                            { addr: '0x6000_0200', content: '"hello"', owner: 's3' }
+                        ],
+                        desc: "s2 cloned to s3. New heap alloc."
+                    }
+                ]
+            },
+            borrow: {
+                code: [
+                    'fn main() {',
+                    '    let mut s = String::from("world");',
+                    '    let r1 = &s;      // Immutable',
+                    '    let r2 = &mut s;  // ERROR will show here',
+                    '    drop(r1);',
+                    '    let r2 = &mut s;  // OK',
+                    '}'
+                ],
+                steps: [
+                     { line: 0, stack: [], heap: [], desc: "Start" },
+                     { 
+                        line: 1, 
+                        stack: [{ name: 's', addr: '0x7FFF_2000', value: '{ ptr: 0x6000_0500... }', type: 'String', color: '#fbbf24' }],
+                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }]
+                     },
+                     {
+                        line: 2,
+                        stack: [
+                            { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' },
+                            { name: 'r1', addr: '0x7FFF_2020', value: '0x7FFF_2000', type: '&String', ref: 's' }
+                        ],
+                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }]
+                     },
+                      {
+                        line: 3,
+                        stack: [
+                            { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' },
+                            { name: 'r1', addr: '0x7FFF_2020', value: '0x7FFF_2000', type: '&String', ref: 's' },
+                            { name: 'r2', addr: '0x7FFF_2040', value: 'BLOCKED', type: '&mut String', invalid: true }
+                        ],
+                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }],
+                        desc: "Cannot borrow as mutable because it is also borrowed as immutable"
+                     },
+                      {
+                        line: 4,
+                        stack: [
+                             { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' }
+                        ],
+                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }]
+                     },
+                     {
+                        line: 5,
+                        stack: [
+                             { name: 's', addr: '0x7FFF_2000', value: '{...}', type: 'String', color: '#fbbf24' },
+                             { name: 'r2', addr: '0x7FFF_2060', value: '0x7FFF_2000', type: '&mut String', ref: 's' }
+                        ],
+                        heap: [{ addr: '0x6000_0500', content: '"world"', owner: 's' }]
+                     }
+                ]
+            },
+            copy: {
+                code: [
+                    'fn main() {',
+                    '    let x = 5;      // Stack integer',
+                    '    let y = x;      // Copy (not move)',
+                    '}'
+                ],
+                steps: [
+                    { line: 0, stack: [], heap: [] },
+                    { 
+                        line: 1, 
+                        stack: [{ name: 'x', addr: '0x7FFF_3000', value: '5', type: 'i32', color: '#38bdf8' }],
+                        heap: []
+                    },
+                    { 
+                        line: 2, 
+                        stack: [
+                            { name: 'x', addr: '0x7FFF_3000', value: '5', type: 'i32', color: '#38bdf8' },
+                            { name: 'y', addr: '0x7FFF_3008', value: '5', type: 'i32', color: '#38bdf8' }
+                        ],
+                        heap: [],
+                        desc: "y is a copy of x. Both are valid."
+                    }
+                ]
+            }
+        };
+
+        // --- Controller ---
+        let currentScenario = 'basic';
+        let stepIndex = 0;
+
+        const ui = {
+            code: document.getElementById('code-display'),
+            stack: document.getElementById('stack-display'),
+            heap: document.getElementById('heap-display'),
+            nextBtn: document.getElementById('next-btn'),
+            prevBtn: document.getElementById('prev-btn'),
+            resetBtn: document.getElementById('reset-btn'),
+            selector: document.getElementById('scenario-selector'),
+            svg: document.getElementById('pointer-layer')
+        };
+
+        function renderCode(scenarioName) {
+            ui.code.innerHTML = '';
+            scenarios[scenarioName].code.forEach((line, idx) => {
+                const el = document.createElement('div');
+                el.className = 'code-line';
+                el.textContent = line;
+                el.id = `line-${idx}`;
+                ui.code.appendChild(el);
+            });
+        }
+
+        function renderState() {
+            const data = scenarios[currentScenario].steps[stepIndex];
+            
+            // Highlight Code
+            document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active'));
+            const activeLine = document.getElementById(`line-${data.line}`);
+            if (activeLine) activeLine.classList.add('active');
+
+            // Render Stack
+            ui.stack.innerHTML = '';
+            // Process stack items (reverse order for visual stack)
+            [...data.stack].reverse().forEach(item => {
+                const block = document.createElement('div');
+                block.className = `memory-block ${item.invalid ? 'invalid' : ''}`;
+                block.id = `stack-${item.name}`;
+                block.innerHTML = `
+                    <div class="var-row">
+                        <span class="var-addr">${item.addr}</span>
+                        <span class="var-name" style="color: ${item.color || '#fff'}">${item.name}</span>
+                    </div>
+                    <div class="var-row">
+                        <span style="color: #64748b; font-size: 0.8em;">${item.type}</span>
+                        <span class="var-value">${item.value}</span>
+                    </div>
+                `;
+                ui.stack.appendChild(block);
+            });
+
+            // Render Heap
+            ui.heap.innerHTML = '';
+            data.heap.forEach(item => {
+                const block = document.createElement('div');
+                block.className = 'memory-block heap-object';
+                block.id = `heap-${item.addr}`; // Use address for ID
+                block.innerHTML = `
+                    <div class="heap-header">Addr: ${item.addr}</div>
+                    <div class="heap-data">Data: ${item.content}</div>
+                `;
+                ui.heap.appendChild(block);
+            });
+
+            // Draw Pointers
+            drawPointers(data);
+
+            // Update Buttons
+            ui.prevBtn.disabled = stepIndex === 0;
+            ui.nextBtn.disabled = stepIndex === scenarios[currentScenario].steps.length - 1;
+        }
+
+        function drawPointers(data) {
+            // Clear existing arrows
+            while(ui.svg.childNodes.length > 2) { // Keep defs
+                ui.svg.removeChild(ui.svg.lastChild);
+            }
+
+            // 1. Stack -> Heap Pointers
+            data.stack.forEach(sItem => {
+                if (sItem.invalid) return; // Don't draw pointer for invalid items
+
+                // Parse value to find pointers (simple heuristics)
+                // Looks for "ptr: 0x..." inside value string
+                const ptrMatch = sItem.value.match(/ptr:\s*(0x[0-9A-F_]+)/i);
+                if (ptrMatch) {
+                    const targetAddr = ptrMatch[1];
+                    drawArrow(`stack-${sItem.name}`, `heap-${targetAddr}`);
+                }
+
+                // 2. Stack -> Stack References (e.g., &String)
+                if (sItem.ref) {
+                    drawArrow(`stack-${sItem.name}`, `stack-${sItem.ref}`, true);
+                }
+            });
+        }
+
+        function drawArrow(infoId, targetId, isStackRef = false) {
+            // We use a timeout to let DOM settle if it was just created
+            requestAnimationFrame(() => {
+                const fromEl = document.getElementById(infoId);
+                const toEl = document.getElementById(targetId);
+
+                if (!fromEl || !toEl) return;
+
+                const fromRect = fromEl.getBoundingClientRect();
+                const toRect = toEl.getBoundingClientRect();
+                const containerRect = ui.svg.getBoundingClientRect();
+
+                // Start point: Right middle of stack item
+                const x1 = fromRect.right - containerRect.left;
+                const y1 = fromRect.top + fromRect.height / 2 - containerRect.top;
+
+                // End point: Left middle of target
+                const x2 = toRect.left - containerRect.left;
+                const y2 = toRect.top + toRect.height / 2 - containerRect.top;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                
+                // Curve for aesthetics
+                const dx = Math.abs(x2 - x1) / 2;
+                const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+                path.setAttribute("d", d);
+                path.setAttribute("class", "pointer-arrow");
+                if (isStackRef) {
+                    path.style.stroke = "#facc15"; // Yellow for references
+                    path.style.strokeDasharray = "5,5";
+                }
+
+                ui.svg.appendChild(path);
+            });
+        }
+
+        // --- Event Listeners ---
+        ui.nextBtn.addEventListener('click', () => {
+            if (stepIndex < scenarios[currentScenario].steps.length - 1) {
+                stepIndex++;
+                renderState();
+            }
+        });
+
+        ui.prevBtn.addEventListener('click', () => {
+            if (stepIndex > 0) {
+                stepIndex--;
+                renderState();
+            }
+        });
+
+        ui.resetBtn.addEventListener('click', () => {
+            stepIndex = 0;
+            renderState();
+        });
+
+        ui.selector.addEventListener('change', (e) => {
+            currentScenario = e.target.value;
+            stepIndex = 0;
+            renderCode(currentScenario);
+            renderState();
+        });
+
+        // Initialize
+        renderCode(currentScenario);
+        renderState();
+
+        // Handle window resize to redraw arrows
+        window.addEventListener('resize', () => renderState());
+
+    </script>
+</body>
+</html>
